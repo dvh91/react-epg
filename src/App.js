@@ -46,6 +46,8 @@ export const isLive = (start, end) => {
   return isInTimerange(now, start, end);
 };
 
+const getChannelTopOffset = (channelIndex) => channelIndex * channelHeight + 36;
+
 const Program = forwardRef(
   ({ data, isFocused, channelIndex, onUnmount }, ref) => {
     const rootRef = useRef(null);
@@ -77,7 +79,7 @@ const Program = forwardRef(
 
       return {
         position: "absolute",
-        top: channelIndex * channelHeight + 36,
+        top: getChannelTopOffset(channelIndex),
         left,
         width,
         height,
@@ -265,15 +267,18 @@ const Epg = forwardRef(
     return (
       <div className="epg" style={{ width: LIST_WIDTH }}>
         <div className="details">
-          <div style={{ marginBottom: 8 }}>{focusedProgram?.title}</div>
-          <div style={{ fontSize: 14, opacity: 0.7 }}>
-            {focusedProgram?.description}
+          <img src={focusedProgram?.image} className="details-image" />
+          <div>
+            <div style={{ marginBottom: 8 }}>{focusedProgram?.title}</div>
+            <div style={{ fontSize: 14, opacity: 0.7 }}>
+              {focusedProgram?.description}
+            </div>
           </div>
         </div>
         <div
           ref={containerRef}
           style={{
-            height: channelHeight * 4,
+            height: channelHeight * 4 + 36,
             overflow: "auto",
             position: "relative"
           }}
@@ -287,7 +292,7 @@ const Epg = forwardRef(
           >
             <div
               style={{
-                backgroundColor: "#ccc",
+                backgroundColor: "rgba(0,0,0,0.1)",
                 position: "absolute",
                 top: 0,
                 left: getWidthByTime(Date.now() - epgEdges.start),

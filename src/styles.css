@@ -24,6 +24,11 @@
   z-index: 10;
   top: 0;
   left: 0;
+  display: flex;
+}
+.details-image {
+  height: 100%;
+  margin-right: 16px;
 }
 .program-title {
   font-size: 14px;
