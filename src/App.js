@@ -18,7 +18,7 @@ const channelHeight = 100;
 const channelwidth = 80;
 const nowMillis = setMinutes(new Date(), 0).getTime();
 
-export const LIST_WIDTH = 600;
+export const LIST_WIDTH = 720;
 export const LIST_HEIGHT = channelHeight * 4;
 export const HOURS_IN_SCREEN = 3;
 export const HOUR_WIDTH = LIST_WIDTH / HOURS_IN_SCREEN;
@@ -290,13 +290,22 @@ const Epg = forwardRef(
     return (
       <div className="epg" style={{ width: LIST_WIDTH }}>
         <div className="details">
-          <img src={focusedProgram?.image} className="details-image" />
-          <div>
-            <div style={{ marginBottom: 8 }}>{focusedProgram?.title}</div>
-            <div style={{ fontSize: 14, opacity: 0.7 }}>
-              {focusedProgram?.description}
-            </div>
-          </div>
+          {focusedProgram && (
+            <>
+              <img src={focusedProgram?.image} className="details-image" />
+              <div>
+                <div style={{ marginBottom: 4 }}>{focusedProgram?.title}</div>
+                <div style={{ marginBottom: 8, fontSize: 14 }}>
+                  {format(focusedProgram.end, "EEE, dd/MM")} at{" "}
+                  {format(focusedProgram.start, "HH:mm")} -
+                  {format(focusedProgram.start, "HH:mm")}
+                </div>
+                <div style={{ fontSize: 14, opacity: 0.7 }}>
+                  {focusedProgram?.description}
+                </div>
+              </div>
+            </>
+          )}
         </div>
         <div
           ref={containerRef}
@@ -407,7 +416,7 @@ export default function App() {
       <div
         ref={(ref) => (ref.scrollLeft = ref.offsetWidth / 2)}
         style={{
-          width: 600,
+          width: LIST_WIDTH,
           whiteSpace: "nowrap",
           overflow: "scroll",
           padding: 8,
