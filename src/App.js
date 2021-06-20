@@ -127,7 +127,7 @@ const Epg = forwardRef(
     }));
 
     const scrollToTime = useCallback((time, behavior = "smooth") => {
-      offsetTime.current = time;
+      offsetTime.current = time - 1;
 
       let left = getWidthByTime(time - epgEdges.start) + channelwidth / 2;
       left -= LIST_WIDTH / 2;
