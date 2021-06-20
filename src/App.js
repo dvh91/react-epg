@@ -237,10 +237,6 @@ const Epg = forwardRef(
 
         setFocusedChannelIndex((prev) => {
           const next = e.which === 40 ? prev + 1 : prev - 1;
-          containerRef.current.scrollTo({
-            top: next * channelHeight,
-            behavior: "smooth"
-          });
 
           const nextProgram = data[next].programs.find(
             (program) =>
@@ -255,6 +251,13 @@ const Epg = forwardRef(
       },
       [data]
     );
+
+    useEffect(() => {
+      containerRef.current.scrollTo({
+        top: focusedChannelIndex * channelHeight,
+        behavior: "smooth"
+      });
+    }, [focusedChannelIndex]);
 
     const handleKeyDown = useCallback((e) => {
       if (e.which === 38 || e.which === 40) {
@@ -419,13 +422,6 @@ export default function App() {
               className="day-button"
               onClick={() => {
                 const time = date.getTime();
-                // const channel = channels[0];
-                // const program = channel.programs.find((p) =>
-                //   isInTimerange(time, p.start, p.end)
-                // );
-                // epgRef.current?.scrollToTime(time);
-                // epgRef.current?.focusProgram(program, channel);
-
                 epgRef.current?.scrollToTimeAndFocus(time);
               }}
             >
