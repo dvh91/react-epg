@@ -128,7 +128,8 @@ const Epg = forwardRef(
 
     const scrollToTime = useCallback((time, behavior = "smooth") => {
       offsetTime.current = time;
-      let left = getWidthByTime(time - (Date.now() - DAYS_BACK_MILLIS));
+
+      let left = getWidthByTime(time - epgEdges.start) + channelwidth / 2;
       left -= LIST_WIDTH / 2;
 
       containerRef.current.scrollTo({
@@ -179,9 +180,8 @@ const Epg = forwardRef(
       if (offsetY < channelIndex * channelHeight - 4 * channelHeight) {
         return false;
       }
-      const programLeft = getWidthByTime(
-        program.start - (Date.now() - DAYS_BACK_MILLIS)
-      );
+      const programLeft =
+        getWidthByTime(program.start - epgEdges.start) + channelwidth;
       const programWidth = getWidthByTime(program.end - program.start);
       const programRight = programLeft + programWidth;
 
@@ -195,7 +195,7 @@ const Epg = forwardRef(
     };
 
     const isTimeVisible = (time) => {
-      const left = getWidthByTime(time - (Date.now() - DAYS_BACK_MILLIS));
+      const left = getWidthByTime(time - epgEdges.start) + channelwidth;
       const width = hour;
       const right = left + width;
 
@@ -326,7 +326,7 @@ const Epg = forwardRef(
                     <>{format(focusedProgram.end, "EEEE, dd/MM")} at </>
                   )}
                   {format(focusedProgram.start, "HH:mm")} -
-                  {format(focusedProgram.start, "HH:mm")}
+                  {format(focusedProgram.end, "HH:mm")}
                 </div>
                 <div style={{ fontSize: 14, opacity: 0.7 }}>
                   {focusedProgram?.description}

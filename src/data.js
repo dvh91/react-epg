@@ -53,18 +53,22 @@ const availableChannelLogos = [
 ];
 
 const availableEventLength = [
-  1000 * 60 * 15, // 15 minutes
-  1000 * 60 * 30, // 30 minutes
-  1000 * 60 * 45, // 45 minutes
-  1000 * 60 * 60, // 60 minutes
-  1000 * 60 * 120 // 120 minutes
+  1000 * 60 * 15,
+  1000 * 60 * 30,
+  1000 * 60 * 45,
+  1000 * 60 * 60,
+  1000 * 60 * 120,
+  1000 * 60 * 270
 ];
 
 export const DAYS_BACK_MILLIS = 10 * 24 * 60 * 60 * 1000; // 10 days
 export const DAYS_FORWARD_MILLIS = 10 * 24 * 60 * 60 * 1000; // 10 days
 
 const getEventEnd = (eventStartMillis) => {
-  const length = availableEventLength[Math.floor(Math.random() * 4 + 0)];
+  const length =
+    availableEventLength[
+      Math.floor(Math.random() * availableEventLength.length + 0)
+    ];
   return eventStartMillis + length;
 };
 
