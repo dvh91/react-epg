@@ -1,6 +1,7 @@
 import "./styles.css";
 import { channels, DAYS_BACK_MILLIS } from "./data";
-import { addDays, format, setMinutes, subDays } from "date-fns";
+import { addDays, format, isSameDay, setMinutes, subDays } from "date-fns";
+import keycode from "keycode";
 import {
   forwardRef,
   useCallback,
@@ -231,12 +232,33 @@ const Epg = forwardRef(
 
     const handleKeyUp = useCallback(
       (e) => {
-        if (e.which !== 38 && e.which !== 40) return;
+        if (
+          e.which === keycode.codes["left"] ||
+          e.which === keycode.codes["right"]
+        ) {
+          e.preventDefault();
+          const channel = data[focusedChannelIndex];
+          const index = channel.programs.indexOf(focusedProgram);
+          const next =
+            e.which === keycode.codes["left"] ? index - 1 : index + 1;
+          const nextProgram = channel.programs[next];
+          setFocusedProgram(nextProgram);
+          scrollToTime(
+            nextProgram.start + (nextProgram.end - nextProgram.start) / 2
+          );
+          return;
+        }
+
+        if (
+          e.which !== keycode.codes["up"] &&
+          e.which !== keycode.codes["down"]
+        )
+          return;
 
         e.preventDefault();
 
         setFocusedChannelIndex((prev) => {
-          const next = e.which === 40 ? prev + 1 : prev - 1;
+          const next = e.which === keycode.codes["down"] ? prev + 1 : prev - 1;
 
           const nextProgram = data[next].programs.find(
             (program) =>
@@ -249,7 +271,7 @@ const Epg = forwardRef(
           return next;
         });
       },
-      [data]
+      [data, focusedProgram, focusedChannelIndex, scrollToTime]
     );
 
     useEffect(() => {
@@ -260,7 +282,12 @@ const Epg = forwardRef(
     }, [focusedChannelIndex]);
 
     const handleKeyDown = useCallback((e) => {
-      if (e.which === 38 || e.which === 40) {
+      if (
+        e.which === keycode.codes["up"] ||
+        e.which === keycode.codes["down"] ||
+        e.which === keycode.codes["left"] ||
+        e.which === keycode.codes["right"]
+      ) {
         e.preventDefault();
       }
     }, []);
@@ -296,7 +323,9 @@ const Epg = forwardRef(
               <div>
                 <div style={{ marginBottom: 4 }}>{focusedProgram?.title}</div>
                 <div style={{ marginBottom: 8, fontSize: 14 }}>
-                  {format(focusedProgram.end, "EEE, dd/MM")} at{" "}
+                  {!isSameDay(new Date(), focusedProgram.start) && (
+                    <>{format(focusedProgram.end, "EEEE, dd/MM")} at </>
+                  )}
                   {format(focusedProgram.start, "HH:mm")} -
                   {format(focusedProgram.start, "HH:mm")}
                 </div>
@@ -327,7 +356,8 @@ const Epg = forwardRef(
                 backgroundColor: "rgba(0,0,0,0.1)",
                 position: "absolute",
                 top: 0,
-                left: getWidthByTime(Date.now() - epgEdges.start),
+                left:
+                  getWidthByTime(Date.now() - epgEdges.start) - channelwidth,
                 bottom: 0,
                 width: 4,
                 zIndex: 10
