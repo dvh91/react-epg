@@ -15,6 +15,7 @@ export const minute = 60 * 1000;
 export const hour = 60 * minute;
 export const day = 24 * hour;
 const channelHeight = 100;
+const channelwidth = 80;
 const nowMillis = setMinutes(new Date(), 0).getTime();
 
 export const LIST_WIDTH = 600;
@@ -64,15 +65,13 @@ const Program = forwardRef(
     }));
 
     useEffect(() => {
-      return () => {
-        onUnmount(data.id);
-      };
+      return () => onUnmount(data.id);
     }, []);
 
     const getProgramStyle = ({ program, channelIndex }) => {
-      const left = getWidthByTime(
-        program.start - (Date.now() - DAYS_BACK_MILLIS)
-      );
+      const left =
+        getWidthByTime(program.start - (Date.now() - DAYS_BACK_MILLIS)) +
+        channelwidth;
 
       const width = getProgramWidth(program.start, program.end);
       const height = channelHeight;
@@ -120,6 +119,7 @@ const Epg = forwardRef(
 
     useImperativeHandle(ref, () => ({
       scrollToTime,
+      scrollToTimeAndFocus,
       focusProgram: (program, channel) => {
         setFocusedChannelIndex(channels.indexOf(channel));
         setFocusedProgram(program);
@@ -136,6 +136,18 @@ const Epg = forwardRef(
         behavior
       });
     }, []);
+
+    const scrollToTimeAndFocus = useCallback(
+      (time) => {
+        scrollToTime(time);
+        const channel = data[focusedChannelIndex];
+        const program = channel.programs.find((p) =>
+          isInTimerange(time, p.start, p.end)
+        );
+        setFocusedProgram(program);
+      },
+      [data, focusedChannelIndex, scrollToTime]
+    );
 
     const scrollToProgram = useCallback(
       (program, isSmoothScroll) => {
@@ -217,7 +229,7 @@ const Epg = forwardRef(
       );
     }, []);
 
-    const handleKeyDown = useCallback(
+    const handleKeyUp = useCallback(
       (e) => {
         if (e.which !== 38 && e.which !== 40) return;
 
@@ -244,13 +256,21 @@ const Epg = forwardRef(
       [data]
     );
 
+    const handleKeyDown = useCallback((e) => {
+      if (e.which === 38 || e.which === 40) {
+        e.preventDefault();
+      }
+    }, []);
+
     useEffect(() => {
-      window.addEventListener("keyup", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+      window.addEventListener("keydown", handleKeyDown);
 
       return () => {
-        window.removeEventListener("keyup", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+        window.removeEventListener("keydown", handleKeyDown);
       };
-    }, [handleKeyDown]);
+    }, [handleKeyUp, handleKeyDown]);
 
     const [times, setTimes] = useState(() => {
       let time = epgEdges.start;
@@ -399,12 +419,14 @@ export default function App() {
               className="day-button"
               onClick={() => {
                 const time = date.getTime();
-                const channel = channels[0];
-                const program = channel.programs.find((p) =>
-                  isInTimerange(time, p.start, p.end)
-                );
-                epgRef.current?.scrollToTime(time);
-                epgRef.current?.focusProgram(program, channel);
+                // const channel = channels[0];
+                // const program = channel.programs.find((p) =>
+                //   isInTimerange(time, p.start, p.end)
+                // );
+                // epgRef.current?.scrollToTime(time);
+                // epgRef.current?.focusProgram(program, channel);
+
+                epgRef.current?.scrollToTimeAndFocus(time);
               }}
             >
               {label}
@@ -416,8 +438,8 @@ export default function App() {
       <Epg
         ref={epgRef}
         data={channels}
-        initialFocusedChannel={channels[1]}
-        initialFocusedProgram={channels[1].programs[10]}
+        initialFocusedChannel={channels[0]}
+        initialFocusedProgram={channels[0].programs[10]}
       />
     </div>
   );
