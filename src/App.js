@@ -71,8 +71,7 @@ const Program = forwardRef(
 
     const getProgramStyle = ({ program, channelIndex }) => {
       const left =
-        getWidthByTime(program.start - (Date.now() - DAYS_BACK_MILLIS)) +
-        channelwidth;
+        getWidthByTime(program.start - epgEdges.start) + channelwidth;
 
       const width = getProgramWidth(program.start, program.end);
       const height = channelHeight;
@@ -357,7 +356,7 @@ const Epg = forwardRef(
                 position: "absolute",
                 top: 0,
                 left:
-                  getWidthByTime(Date.now() - epgEdges.start) - channelwidth,
+                  getWidthByTime(Date.now() - epgEdges.start) + channelwidth,
                 bottom: 0,
                 width: 4,
                 zIndex: 10
@@ -368,7 +367,7 @@ const Epg = forwardRef(
                 <div
                   style={{
                     position: "absolute",
-                    left: getWidthByTime(time - epgEdges.start),
+                    left: getWidthByTime(time - epgEdges.start) + channelwidth,
                     zIndex: 10,
                     display: "flex",
                     alignItems: "center"
