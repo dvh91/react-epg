@@ -15,9 +15,10 @@ const useEpg = ({
   data,
   initialFocusedChannel,
   initialFocusedProgram,
-  onFocusedProgramChange
+  onFocusedProgramChange,
+  onTimeChange
 }) => {
-  const offsetTime = useRef(Date.now());
+  const [offsetTime, setOffsetTime] = useState(Date.now());
   const containerRef = useRef();
   const unmountedFocusedProgramId = useRef(null);
   const programRefs = useRef({});
@@ -30,7 +31,7 @@ const useEpg = ({
   const [focusedProgram, setFocusedProgram] = useState(initialFocusedProgram);
 
   const scrollToTime = useCallback((time, behavior = "smooth") => {
-    offsetTime.current = time - 1;
+    setOffsetTime(time - 1);
 
     let left = getWidthByTime(time - epgEdges.start) + channelwidth / 2;
     left -= LIST_WIDTH / 2;
@@ -115,12 +116,12 @@ const useEpg = ({
       } else {
         scrollToTime(
           e.which === keycode.codes["left"]
-            ? offsetTime.current - hour
-            : offsetTime.current + hour
+            ? offsetTime - hour
+            : offsetTime + hour
         );
       }
     },
-    [data, focusedChannelIndex, focusedProgram, scrollToTime]
+    [data, offsetTime, focusedChannelIndex, focusedProgram, scrollToTime]
   );
 
   const handleUpDownPress = useCallback(
@@ -132,7 +133,7 @@ const useEpg = ({
         if (next < 0 || next > data.length - 1) return prev;
 
         const nextProgram = data[next].programs.find((program) =>
-          isInTimerange(offsetTime.current, program.start, program.end)
+          isInTimerange(offsetTime, program.start, program.end)
         );
 
         setFocusedProgram(nextProgram);
@@ -140,7 +141,7 @@ const useEpg = ({
         return next;
       });
     },
-    [data]
+    [data, offsetTime]
   );
 
   const handleKeyDown = useCallback(
@@ -230,6 +231,10 @@ const useEpg = ({
   useEffect(() => {
     onFocusedProgramChange(focusedProgram);
   }, [focusedProgram, onFocusedProgramChange]);
+
+  useEffect(() => {
+    onTimeChange(offsetTime);
+  }, [offsetTime, onTimeChange]);
 
   return {
     visiblePrograms,

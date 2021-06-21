@@ -12,7 +12,8 @@ const Epg = forwardRef((props, ref) => {
     data,
     initialFocusedChannel,
     initialFocusedProgram,
-    onFocusedProgramChange
+    onFocusedProgramChange,
+    onTimeChange
   } = props;
 
   const {
@@ -28,7 +29,8 @@ const Epg = forwardRef((props, ref) => {
     data,
     initialFocusedChannel,
     initialFocusedProgram,
-    onFocusedProgramChange
+    onFocusedProgramChange,
+    onTimeChange
   });
 
   useImperativeHandle(ref, () => ({

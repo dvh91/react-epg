@@ -9,6 +9,7 @@ import DaysBar from "./DaysBar";
 export default function App() {
   const epgRef = useRef();
   const [focusedProgram, setFocusedProgram] = useState();
+  const [time, setTime] = useState();
 
   const handleDaySelect = useCallback((time) => {
     if (!epgRef.current) return;
@@ -17,7 +18,7 @@ export default function App() {
 
   return (
     <div className="App" style={{ width: LIST_WIDTH }}>
-      <DaysBar onSelect={handleDaySelect} />
+      <DaysBar value={time} onSelect={handleDaySelect} />
       <Details focusedProgram={focusedProgram} />
       <Epg
         ref={epgRef}
@@ -28,6 +29,7 @@ export default function App() {
           isLive(p.start, p.end)
         )}
         onFocusedProgramChange={setFocusedProgram}
+        onTimeChange={setTime}
       />
     </div>
   );

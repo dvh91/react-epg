@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 
 const primeTimeHour = 20;
 
-const DaysBar = ({ onSelect }) => {
+const DaysBar = ({ value, onSelect }) => {
   const [times] = useState(() => {
     const result = [];
     for (let index = -10; index < 10; index++) {
@@ -15,7 +15,7 @@ const DaysBar = ({ onSelect }) => {
       result.push([setHours(new Date(), primeTimeHour), "This evening"]);
     }
 
-    return result.sort((a, b) => a[0] - b[0]);
+    return result.sort(([dateA], [dateB]) => dateA - dateB);
   });
 
   const handleRef = useCallback((ref) => {
@@ -33,13 +33,16 @@ const DaysBar = ({ onSelect }) => {
 
   return (
     <div ref={handleRef} className="days-bar">
-      {times.map((item) => {
+      {times.map((item, index) => {
         const date = item[0];
         const label = item.length === 2 ? item[1] : format(date, "dd/MM");
+        const isActive =
+          value > date.getTime() && value < times[index + 1][0].getTime();
         return (
           <button
             key={item}
             className="day-button"
+            style={{ color: isActive ? "#000" : "#999" }}
             onClick={() => handleItemClick(date)}
           >
             {label}
