@@ -1,4 +1,4 @@
-import { addDays, format } from "date-fns";
+import { addDays, format, getHours, setHours } from "date-fns";
 import { useCallback, useState } from "react";
 
 const DaysBar = ({ onSelect }) => {
@@ -8,6 +8,11 @@ const DaysBar = ({ onSelect }) => {
       if (index === 0) result.push(["Now", new Date()]);
       else result.push(addDays(new Date(), index));
     }
+
+    if (getHours(new Date()) + 3 < 20) {
+      result.push(["This evening", setHours(new Date(), 18)]);
+    }
+
     return result;
   });
 
