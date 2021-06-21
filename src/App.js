@@ -1,6 +1,5 @@
 import "./styles.css";
 import { channels } from "./data";
-import { addDays, format, subDays } from "date-fns";
 import keycode from "keycode";
 import {
   forwardRef,
@@ -25,6 +24,7 @@ import Details from "./Details";
 import LiveIndicator from "./LiveIndicator";
 import ChannelList from "./ChannelList";
 import TimesBar from "./TimesBar";
+import DaysBar from "./DaysBar";
 
 const Epg = forwardRef((props, ref) => {
   const {
@@ -153,36 +153,31 @@ const Epg = forwardRef((props, ref) => {
     });
   }, [focusedChannelIndex]);
 
-  const handleKeyDown = useCallback(
+  const handleRightLeftPress = useCallback(
     (e) => {
-      if (
-        e.which === keycode.codes["left"] ||
-        e.which === keycode.codes["right"]
-      ) {
-        e.preventDefault();
-        const channel = data[focusedChannelIndex];
-        const index = channel.programs.indexOf(focusedProgram);
-        const next = e.which === keycode.codes["left"] ? index - 1 : index + 1;
-        const nextProgram = channel.programs[next];
-        if (nextProgram) {
-          setFocusedProgram(nextProgram);
-          scrollToTime(
-            nextProgram.start + (nextProgram.end - nextProgram.start) / 2
-          );
-        } else {
-          scrollToTime(
-            e.which === keycode.codes["left"]
-              ? offsetTime.current - hour
-              : offsetTime.current + hour
-          );
-        }
-
-        return;
+      e.preventDefault();
+      const channel = data[focusedChannelIndex];
+      const index = channel.programs.indexOf(focusedProgram);
+      const next = e.which === keycode.codes["left"] ? index - 1 : index + 1;
+      const nextProgram = channel.programs[next];
+      if (nextProgram) {
+        setFocusedProgram(nextProgram);
+        scrollToTime(
+          nextProgram.start + (nextProgram.end - nextProgram.start) / 2
+        );
+      } else {
+        scrollToTime(
+          e.which === keycode.codes["left"]
+            ? offsetTime.current - hour
+            : offsetTime.current + hour
+        );
       }
+    },
+    [data, focusedChannelIndex, focusedProgram, scrollToTime]
+  );
 
-      if (e.which !== keycode.codes["up"] && e.which !== keycode.codes["down"])
-        return;
-
+  const handleUpDownPress = useCallback(
+    (e) => {
       e.preventDefault();
 
       setFocusedChannelIndex((prev) => {
@@ -200,7 +195,24 @@ const Epg = forwardRef((props, ref) => {
         return next;
       });
     },
-    [data, focusedProgram, focusedChannelIndex, scrollToTime]
+    [data]
+  );
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (
+        e.which === keycode.codes["left"] ||
+        e.which === keycode.codes["right"]
+      ) {
+        return handleRightLeftPress(e);
+      } else if (
+        e.which === keycode.codes["up"] ||
+        e.which === keycode.codes["down"]
+      ) {
+        return handleUpDownPress(e);
+      }
+    },
+    [handleRightLeftPress, handleUpDownPress]
   );
 
   const handleKeyUp = useCallback((e) => {
@@ -252,10 +264,10 @@ const Epg = forwardRef((props, ref) => {
                 <Program
                   key={program.id}
                   ref={handleProgramRef}
-                  onUnmount={handleProgramUnmount}
                   data={program}
                   channelIndex={channelIndex}
                   isFocused={focusedProgram?.id === program.id}
+                  onUnmount={handleProgramUnmount}
                 />
               ))
           )}
@@ -270,60 +282,14 @@ Epg.displayName = "Epg";
 export default function App() {
   const epgRef = useRef();
 
-  const [times, setTimes] = useState([
-    subDays(new Date(), 10),
-    subDays(new Date(), 9),
-    subDays(new Date(), 8),
-    subDays(new Date(), 7),
-    subDays(new Date(), 6),
-    subDays(new Date(), 5),
-    subDays(new Date(), 4),
-    subDays(new Date(), 3),
-    subDays(new Date(), 2),
-    subDays(new Date(), 1),
-    ["Now", new Date()],
-    addDays(new Date(), 1),
-    addDays(new Date(), 2),
-    addDays(new Date(), 3),
-    addDays(new Date(), 4),
-    addDays(new Date(), 5),
-    addDays(new Date(), 6),
-    addDays(new Date(), 7),
-    addDays(new Date(), 8),
-    addDays(new Date(), 9),
-    addDays(new Date(), 10)
-  ]);
+  const handleDaySelect = useCallback((time) => {
+    if (!epgRef.current) return;
+    epgRef.current.scrollToTimeAndFocus(time);
+  }, []);
 
   return (
     <div className="App">
-      <div
-        ref={(ref) => (ref.scrollLeft = ref.offsetWidth / 2)}
-        style={{
-          width: LIST_WIDTH,
-          whiteSpace: "nowrap",
-          overflow: "scroll",
-          padding: 8,
-          backgroundColor: "#f8f8f8"
-        }}
-      >
-        {times.map((item) => {
-          const date = Array.isArray(item) ? item[1] : item;
-          const label = Array.isArray(item) ? item[0] : format(date, "dd/MM");
-          return (
-            <button
-              key={item}
-              className="day-button"
-              onClick={() => {
-                const time = date.getTime();
-                epgRef.current?.scrollToTimeAndFocus(time);
-              }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
+      <DaysBar onSelect={handleDaySelect} />
       <Epg
         ref={epgRef}
         channels={channels}
