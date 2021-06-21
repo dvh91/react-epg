@@ -24,8 +24,8 @@ export const LIST_WIDTH = 720;
 export const LIST_HEIGHT = channelHeight * 4;
 export const HOURS_IN_SCREEN = 3;
 export const HOUR_WIDTH = LIST_WIDTH / HOURS_IN_SCREEN;
-export const EPG_START_DATA_TIME = nowMillis - 10 * day;
-export const EPG_END_DATA_TIME = nowMillis + 10 * day;
+export const EPG_START_DATA_TIME = nowMillis - 15 * day;
+export const EPG_END_DATA_TIME = nowMillis + 15 * day;
 
 export const epgEdges = {
   start: EPG_START_DATA_TIME,
@@ -178,7 +178,7 @@ const Epg = forwardRef((props, ref) => {
       unmountedFocusedProgramId.current = focusedProgram.id;
       return;
     }
-    // programRefs.current[focusedProgram.id].focus();
+    programRefs.current[focusedProgram.id].focus();
   }, [focusedProgram]);
 
   const isProgramVisible = ({ program, channelIndex }) => {
@@ -218,7 +218,7 @@ const Epg = forwardRef((props, ref) => {
     programRefs.current[ref.id] = ref;
 
     if (unmountedFocusedProgramId.current === ref.id) {
-      // ref.focus();
+      ref.focus();
       unmountedFocusedProgramId.current = null;
     }
   }, []);
@@ -248,10 +248,19 @@ const Epg = forwardRef((props, ref) => {
         const index = channel.programs.indexOf(focusedProgram);
         const next = e.which === keycode.codes["left"] ? index - 1 : index + 1;
         const nextProgram = channel.programs[next];
-        setFocusedProgram(nextProgram);
-        scrollToTime(
-          nextProgram.start + (nextProgram.end - nextProgram.start) / 2
-        );
+        if (nextProgram) {
+          setFocusedProgram(nextProgram);
+          scrollToTime(
+            nextProgram.start + (nextProgram.end - nextProgram.start) / 2
+          );
+        } else {
+          scrollToTime(
+            e.which === keycode.codes["left"]
+              ? offsetTime.current - hour
+              : offsetTime.current + hour
+          );
+        }
+
         return;
       }
 
@@ -262,6 +271,7 @@ const Epg = forwardRef((props, ref) => {
 
       setFocusedChannelIndex((prev) => {
         const next = e.which === keycode.codes["down"] ? prev + 1 : prev - 1;
+        if (next < 0 || next > data.length - 1) return prev;
 
         const nextProgram = data[next].programs.find(
           (program) =>
