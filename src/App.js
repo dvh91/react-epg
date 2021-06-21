@@ -1,10 +1,9 @@
 import "./styles.css";
 import { channels } from "./data";
-import { addDays, format, isSameDay, setMinutes, subDays } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
 import keycode from "keycode";
 import {
   forwardRef,
-  memo,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -12,99 +11,20 @@ import {
   useState
 } from "react";
 import { throttle } from "lodash";
-
-export const minute = 60 * 1000;
-export const hour = 60 * minute;
-export const day = 24 * hour;
-const channelHeight = 100;
-const channelwidth = 80;
-const nowMillis = setMinutes(new Date(), 0).getTime();
-
-export const LIST_WIDTH = 720;
-export const LIST_HEIGHT = channelHeight * 4;
-export const HOURS_IN_SCREEN = 3;
-export const HOUR_WIDTH = LIST_WIDTH / HOURS_IN_SCREEN;
-export const EPG_START_DATA_TIME = nowMillis - 15 * day;
-export const EPG_END_DATA_TIME = nowMillis + 15 * day;
-
-export const epgEdges = {
-  start: EPG_START_DATA_TIME,
-  end: EPG_END_DATA_TIME
-};
-
-export const getWidthByTime = (time) => {
-  return HOUR_WIDTH * (time / hour);
-};
-
-export const getProgramWidth = (start, end) => {
-  return getWidthByTime(end - start);
-};
-
-export const isInTimerange = (time, start, end) => {
-  return time >= start && time < end;
-};
-
-export const isLive = (start, end) => {
-  const now = Date.now();
-  return isInTimerange(now, start, end);
-};
-
-const getChannelTopOffset = (channelIndex) => channelIndex * channelHeight + 36;
-
-const Program = memo(
-  forwardRef(({ data, isFocused, channelIndex, onUnmount }, ref) => {
-    const rootRef = useRef(null);
-    const [isFuture, setIsFuture] = useState(() => {
-      const isLive = Date.now() >= data.start && Date.now() < data.end;
-      return !isLive && Date.now() < data.end;
-    });
-
-    useImperativeHandle(ref, () => ({
-      id: data.id,
-      focus: () => {
-        rootRef.current.focus();
-      }
-    }));
-
-    useEffect(() => {
-      return () => onUnmount(data.id);
-    }, []);
-
-    const getProgramStyle = ({ program, channelIndex }) => {
-      const left =
-        getWidthByTime(program.start - epgEdges.start) + channelwidth;
-
-      const width = getProgramWidth(program.start, program.end);
-      const height = channelHeight;
-
-      return {
-        position: "absolute",
-        top: getChannelTopOffset(channelIndex),
-        left,
-        width,
-        height,
-        backgroundColor: isFocused ? "#ccc" : undefined,
-        opacity: isFuture ? 0.5 : 1
-      };
-    };
-
-    return (
-      <div
-        ref={rootRef}
-        className="program"
-        tabIndex="0"
-        style={getProgramStyle({ program: data, channelIndex })}
-      >
-        <div className="program-title">{data.title}</div>
-        <div className="program-times">
-          {format(data.start, "HH:mm")} - {format(data.end, "HH:mm")}
-        </div>
-      </div>
-    );
-  })
-);
-
-Program.displayName = "Program";
+import Program from "./Program";
+import {
+  LIST_WIDTH,
+  hour,
+  channelHeight,
+  channelwidth,
+  epgEdges,
+  getWidthByTime,
+  isInTimerange
+} from "./utils";
+import Details from "./Details";
+import LiveIndicator from "./LiveIndicator";
+import ChannelList from "./ChannelList";
+import TimesBar from "./TimesBar";
 
 const Epg = forwardRef((props, ref) => {
   const {
@@ -197,17 +117,6 @@ const Epg = forwardRef((props, ref) => {
       programLeft > offsetX - programWidth &&
       programRight - programWidth < offsetX + LIST_WIDTH
     )
-      return true;
-
-    return false;
-  };
-
-  const isTimeVisible = (time) => {
-    const left = getWidthByTime(time - epgEdges.start) + channelwidth;
-    const width = hour;
-    const right = left + width;
-
-    if (left > offsetX - width && right - width < offsetX + LIST_WIDTH)
       return true;
 
     return false;
@@ -315,40 +224,9 @@ const Epg = forwardRef((props, ref) => {
     };
   }, [handleKeyUp, handleKeyDown]);
 
-  const [times, setTimes] = useState(() => {
-    let time = epgEdges.start;
-    const result = [time];
-
-    while (time < epgEdges.end) {
-      time += hour;
-      result.push(time);
-    }
-
-    return result;
-  });
-
   return (
     <div className="epg" style={{ width: LIST_WIDTH }}>
-      <div className="details">
-        {focusedProgram && (
-          <>
-            <img src={focusedProgram?.image} className="details-image" />
-            <div>
-              <div style={{ marginBottom: 4 }}>{focusedProgram?.title}</div>
-              <div style={{ marginBottom: 8, fontSize: 14 }}>
-                {!isSameDay(new Date(), focusedProgram.start) && (
-                  <>{format(focusedProgram.end, "EEEE, dd/MM")} at </>
-                )}
-                {format(focusedProgram.start, "HH:mm")} -
-                {format(focusedProgram.end, "HH:mm")}
-              </div>
-              <div style={{ fontSize: 14, opacity: 0.7 }}>
-                {focusedProgram?.description}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <Details focusedProgram={focusedProgram} />
       <div
         ref={containerRef}
         style={{
@@ -364,47 +242,9 @@ const Epg = forwardRef((props, ref) => {
             height: channels.length * channelHeight
           }}
         >
-          <div
-            style={{
-              backgroundColor: "rgba(0,0,0,0.1)",
-              position: "absolute",
-              top: 0,
-              left: getWidthByTime(Date.now() - epgEdges.start) + channelwidth,
-              bottom: 0,
-              width: 4,
-              zIndex: 10
-            }}
-          />
-          <div className="times">
-            {times.filter(isTimeVisible).map((time) => (
-              <div
-                key={time}
-                style={{
-                  position: "absolute",
-                  left: getWidthByTime(time - epgEdges.start) + channelwidth,
-                  zIndex: 10,
-                  display: "flex",
-                  alignItems: "center"
-                }}
-              >
-                {format(time, "HH:mm")}
-              </div>
-            ))}
-          </div>
-          <div className="channels">
-            {channels.map((channel, channelIndex) => (
-              <div
-                key={channel.number}
-                style={{
-                  height: channelHeight,
-                  padding: 4,
-                  display: "flex"
-                }}
-              >
-                <img src={channel.logo} width={60} height={60} />
-              </div>
-            ))}
-          </div>
+          <LiveIndicator />
+          <TimesBar offsetX={offsetX} />
+          <ChannelList channels={channels} />
           {data.map((channel, channelIndex) =>
             channel.programs
               .filter((program) => isProgramVisible({ program, channelIndex }))
@@ -471,6 +311,7 @@ export default function App() {
           const label = Array.isArray(item) ? item[0] : format(date, "dd/MM");
           return (
             <button
+              key={item}
               className="day-button"
               onClick={() => {
                 const time = date.getTime();
