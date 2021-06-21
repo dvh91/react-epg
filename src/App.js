@@ -18,7 +18,8 @@ import {
   channelwidth,
   epgEdges,
   getWidthByTime,
-  isInTimerange
+  isInTimerange,
+  isLive
 } from "./utils";
 import Details from "./Details";
 import LiveIndicator from "./LiveIndicator";
@@ -33,26 +34,18 @@ const Epg = forwardRef((props, ref) => {
     initialFocusedChannel,
     initialFocusedProgram
   } = props;
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
+
   const offsetTime = useRef(Date.now());
   const containerRef = useRef();
+  const unmountedFocusedProgramId = useRef(null);
   const programRefs = useRef({});
+
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
   const [focusedChannelIndex, setFocusedChannelIndex] = useState(() =>
     data.findIndex((c) => initialFocusedChannel?.number === c.number)
   );
   const [focusedProgram, setFocusedProgram] = useState(initialFocusedProgram);
-
-  const unmountedFocusedProgramId = useRef(null);
-
-  useImperativeHandle(ref, () => ({
-    scrollToTime,
-    scrollToTimeAndFocus,
-    focusProgram: (program, channel) => {
-      setFocusedChannelIndex(channels.indexOf(channel));
-      setFocusedProgram(program);
-    }
-  }));
 
   const scrollToTime = useCallback((time, behavior = "smooth") => {
     offsetTime.current = time - 1;
@@ -87,40 +80,29 @@ const Epg = forwardRef((props, ref) => {
     [scrollToTime]
   );
 
-  useEffect(() => {
-    if (!initialFocusedProgram) return;
-    scrollToProgram(initialFocusedProgram, false);
-  }, [initialFocusedProgram, scrollToProgram]);
+  const isProgramVisible = useCallback(
+    ({ program, channelIndex }) => {
+      if (offsetY > channelIndex * channelHeight + 4 * channelHeight) {
+        return false;
+      }
+      if (offsetY < channelIndex * channelHeight - 4 * channelHeight) {
+        return false;
+      }
+      const programLeft =
+        getWidthByTime(program.start - epgEdges.start) + channelwidth;
+      const programWidth = getWidthByTime(program.end - program.start);
+      const programRight = programLeft + programWidth;
 
-  useEffect(() => {
-    if (!focusedProgram) return;
-    if (!programRefs.current[focusedProgram.id]) {
-      unmountedFocusedProgramId.current = focusedProgram.id;
-      return;
-    }
-    programRefs.current[focusedProgram.id].focus();
-  }, [focusedProgram]);
+      if (
+        programLeft > offsetX - programWidth &&
+        programRight - programWidth < offsetX + LIST_WIDTH
+      )
+        return true;
 
-  const isProgramVisible = ({ program, channelIndex }) => {
-    if (offsetY > channelIndex * channelHeight + 4 * channelHeight) {
       return false;
-    }
-    if (offsetY < channelIndex * channelHeight - 4 * channelHeight) {
-      return false;
-    }
-    const programLeft =
-      getWidthByTime(program.start - epgEdges.start) + channelwidth;
-    const programWidth = getWidthByTime(program.end - program.start);
-    const programRight = programLeft + programWidth;
-
-    if (
-      programLeft > offsetX - programWidth &&
-      programRight - programWidth < offsetX + LIST_WIDTH
-    )
-      return true;
-
-    return false;
-  };
+    },
+    [offsetX, offsetY]
+  );
 
   const handleProgramRef = useCallback((ref) => {
     if (!ref) return;
@@ -135,24 +117,6 @@ const Epg = forwardRef((props, ref) => {
   const handleProgramUnmount = useCallback((programId) => {
     programRefs.current[programId] = null;
   }, []);
-
-  // #todo: react native support
-  useEffect(() => {
-    containerRef.current.addEventListener(
-      "scroll",
-      throttle((e) => {
-        setOffsetX(e.target.scrollLeft);
-        setOffsetY(e.target.scrollTop);
-      }, 100)
-    );
-  }, []);
-
-  useEffect(() => {
-    containerRef.current.scrollTo({
-      top: focusedChannelIndex * channelHeight,
-      behavior: "smooth"
-    });
-  }, [focusedChannelIndex]);
 
   const handleRightLeftPress = useCallback(
     (e) => {
@@ -226,6 +190,37 @@ const Epg = forwardRef((props, ref) => {
   }, []);
 
   useEffect(() => {
+    if (!initialFocusedProgram) return;
+    scrollToProgram(initialFocusedProgram, false);
+  }, [initialFocusedProgram, scrollToProgram]);
+
+  useEffect(() => {
+    if (!focusedProgram) return;
+    if (!programRefs.current[focusedProgram.id]) {
+      unmountedFocusedProgramId.current = focusedProgram.id;
+      return;
+    }
+    programRefs.current[focusedProgram.id].focus();
+  }, [focusedProgram]);
+
+  useEffect(() => {
+    containerRef.current.addEventListener(
+      "scroll",
+      throttle((e) => {
+        setOffsetX(e.target.scrollLeft);
+        setOffsetY(e.target.scrollTop);
+      }, 100)
+    );
+  }, []);
+
+  useEffect(() => {
+    containerRef.current.scrollTo({
+      top: focusedChannelIndex * channelHeight,
+      behavior: "smooth"
+    });
+  }, [focusedChannelIndex]);
+
+  useEffect(() => {
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("keydown", handleKeyDown);
 
@@ -234,6 +229,26 @@ const Epg = forwardRef((props, ref) => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyUp, handleKeyDown]);
+
+  useImperativeHandle(ref, () => ({
+    scrollToTime,
+    scrollToTimeAndFocus,
+    focusProgram: (program, channel) => {
+      setFocusedChannelIndex(channels.indexOf(channel));
+      setFocusedProgram(program);
+    }
+  }));
+
+  const visiblePrograms = data.reduce((acc, channel, channelIndex) => {
+    const channelVisiblePrograms = channel.programs.filter((program) =>
+      isProgramVisible({ program, channelIndex })
+    );
+    acc.push(
+      ...channelVisiblePrograms.map((program) => [program, channelIndex])
+    );
+
+    return acc;
+  }, []);
 
   return (
     <div className="epg" style={{ width: LIST_WIDTH }}>
@@ -256,20 +271,16 @@ const Epg = forwardRef((props, ref) => {
           <LiveIndicator />
           <TimesBar offsetX={offsetX} />
           <ChannelList channels={channels} />
-          {data.map((channel, channelIndex) =>
-            channel.programs
-              .filter((program) => isProgramVisible({ program, channelIndex }))
-              .map((program) => (
-                <Program
-                  key={program.id}
-                  ref={handleProgramRef}
-                  data={program}
-                  channelIndex={channelIndex}
-                  isFocused={focusedProgram?.id === program.id}
-                  onUnmount={handleProgramUnmount}
-                />
-              ))
-          )}
+          {visiblePrograms.map(([program, channelIndex]) => (
+            <Program
+              key={program.id}
+              ref={handleProgramRef}
+              data={program}
+              channelIndex={channelIndex}
+              isFocused={focusedProgram?.id === program.id}
+              onUnmount={handleProgramUnmount}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -294,7 +305,9 @@ export default function App() {
         channels={channels}
         data={channels}
         initialFocusedChannel={channels[0]}
-        initialFocusedProgram={channels[0].programs[10]}
+        initialFocusedProgram={channels[0].programs.find((p) =>
+          isLive(p.start, p.end)
+        )}
       />
     </div>
   );
