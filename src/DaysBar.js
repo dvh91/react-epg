@@ -1,35 +1,23 @@
-import { addDays, format, subDays } from "date-fns";
+import { addDays, format } from "date-fns";
 import { useState } from "react";
 import { LIST_WIDTH } from "./utils";
 
 const DaysBar = ({ onSelect }) => {
-  const [times, setTimes] = useState([
-    subDays(new Date(), 10),
-    subDays(new Date(), 9),
-    subDays(new Date(), 8),
-    subDays(new Date(), 7),
-    subDays(new Date(), 6),
-    subDays(new Date(), 5),
-    subDays(new Date(), 4),
-    subDays(new Date(), 3),
-    subDays(new Date(), 2),
-    subDays(new Date(), 1),
-    ["Now", new Date()],
-    addDays(new Date(), 1),
-    addDays(new Date(), 2),
-    addDays(new Date(), 3),
-    addDays(new Date(), 4),
-    addDays(new Date(), 5),
-    addDays(new Date(), 6),
-    addDays(new Date(), 7),
-    addDays(new Date(), 8),
-    addDays(new Date(), 9),
-    addDays(new Date(), 10)
-  ]);
+  const [times] = useState(() => {
+    const array = [];
+    for (let index = -10; index < 10; index++) {
+      if (index === 0) array.push(["Now", new Date()]);
+      else array.push(addDays(new Date(), index));
+    }
+    return array;
+  });
 
   return (
     <div
-      ref={(ref) => (ref.scrollLeft = ref.offsetWidth / 2)}
+      ref={(ref) => {
+        if (!ref) return;
+        ref.scrollLeft = ref.offsetWidth / 2;
+      }}
       style={{
         width: LIST_WIDTH,
         whiteSpace: "nowrap",

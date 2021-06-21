@@ -136,6 +136,7 @@ const Epg = forwardRef((props, ref) => {
     programRefs.current[programId] = null;
   }, []);
 
+  // #todo: react native support
   useEffect(() => {
     containerRef.current.addEventListener(
       "scroll",
@@ -184,10 +185,8 @@ const Epg = forwardRef((props, ref) => {
         const next = e.which === keycode.codes["down"] ? prev + 1 : prev - 1;
         if (next < 0 || next > data.length - 1) return prev;
 
-        const nextProgram = data[next].programs.find(
-          (program) =>
-            offsetTime.current >= program.start &&
-            offsetTime.current < program.end
+        const nextProgram = data[next].programs.find((program) =>
+          isInTimerange(offsetTime.current, program.start, program.end)
         );
 
         setFocusedProgram(nextProgram);
