@@ -15,6 +15,12 @@
   padding: 12px;
   box-sizing: border-box;
 }
+.days-bar {
+  white-space: nowrap;
+  overflow: scroll;
+  padding: 8;
+  background-color: #f8f8f8;
+}
 .details {
   background-color: #222;
   padding: 12px;

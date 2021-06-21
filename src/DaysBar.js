@@ -18,13 +18,7 @@ const DaysBar = ({ onSelect }) => {
         if (!ref) return;
         ref.scrollLeft = ref.offsetWidth / 2;
       }}
-      style={{
-        width: LIST_WIDTH,
-        whiteSpace: "nowrap",
-        overflow: "scroll",
-        padding: 8,
-        backgroundColor: "#f8f8f8"
-      }}
+      className="days-bar"
     >
       {times.map((item) => {
         const date = Array.isArray(item) ? item[1] : item;
