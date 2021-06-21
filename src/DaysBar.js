@@ -5,13 +5,18 @@ import {
   format,
   getHours,
   setHours,
-  startOfDay
+  startOfDay,
+  subHours
 } from "date-fns";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { HOURS_IN_SCREEN } from "./utils";
 
 const primeTimeHour = 20;
 
 const DaysBar = ({ value, onSelect }) => {
+  const rootRef = useRef();
+  const refs = useRef({});
+
   const [times] = useState(() => {
     const result = [];
     for (let index = -10; index < 10; index++) {
@@ -32,11 +37,6 @@ const DaysBar = ({ value, onSelect }) => {
 
   const [activeIndex, setActiveIndex] = useState();
 
-  const handleRef = useCallback((ref) => {
-    if (!ref) return;
-    ref.scrollLeft = ref.offsetWidth / 2;
-  }, []);
-
   const handleItemClick = useCallback(
     (date) => {
       const time = date.getTime();
@@ -47,10 +47,11 @@ const DaysBar = ({ value, onSelect }) => {
 
   useEffect(() => {
     const primeTimeItem = times.find((t) => t[2] === "primetime");
+    value && console.log(format(new Date(value), "HH:mm"));
     if (
       primeTimeItem &&
-      value >= primeTimeItem[0].getTime() &&
-      value < addHours(primeTimeItem[0], 4)
+      value >= subHours(primeTimeItem[0], HOURS_IN_SCREEN / 2) &&
+      value <= addHours(primeTimeItem[0], 4)
     ) {
       setActiveIndex(times.indexOf(primeTimeItem));
     } else {
@@ -61,8 +62,16 @@ const DaysBar = ({ value, onSelect }) => {
     }
   }, [times, value]);
 
+  useEffect(() => {
+    if (!refs.current[activeIndex]) return;
+    refs.current[activeIndex].scrollIntoView({
+      behavior: "smooth",
+      inline: "center"
+    });
+  }, [activeIndex]);
+
   return (
-    <div ref={handleRef} className="days-bar">
+    <div ref={rootRef} className="days-bar">
       {times.map((item, index) => {
         const date = item[0];
         const label = item[1] ? item[1] : format(date, "dd/MM");
@@ -70,6 +79,7 @@ const DaysBar = ({ value, onSelect }) => {
         return (
           <button
             key={item}
+            ref={(ref) => (refs.current[index] = ref)}
             className="day-button"
             style={{ color: isActive ? "#000" : "#999" }}
             onClick={() => handleItemClick(date)}
