@@ -1,9 +1,10 @@
 import "./styles.css";
-import { channels, DAYS_BACK_MILLIS } from "./data";
+import { channels } from "./data";
 import { addDays, format, isSameDay, setMinutes, subDays } from "date-fns";
 import keycode from "keycode";
 import {
   forwardRef,
+  memo,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -50,8 +51,8 @@ export const isLive = (start, end) => {
 
 const getChannelTopOffset = (channelIndex) => channelIndex * channelHeight + 36;
 
-const Program = forwardRef(
-  ({ data, isFocused, channelIndex, onUnmount }, ref) => {
+const Program = memo(
+  forwardRef(({ data, isFocused, channelIndex, onUnmount }, ref) => {
     const rootRef = useRef(null);
     const [isFuture, setIsFuture] = useState(() => {
       const isLive = Date.now() >= data.start && Date.now() < data.end;
@@ -100,318 +101,321 @@ const Program = forwardRef(
         </div>
       </div>
     );
-  }
+  })
 );
 
-const Epg = forwardRef(
-  ({ data, initialFocusedChannel, initialFocusedProgram }, ref) => {
-    const [offsetX, setOffsetX] = useState(0);
-    const [offsetY, setOffsetY] = useState(0);
-    const offsetTime = useRef(Date.now());
-    const containerRef = useRef();
-    const programRefs = useRef({});
-    const [focusedChannelIndex, setFocusedChannelIndex] = useState(() =>
-      data.findIndex((c) => initialFocusedChannel?.number === c.number)
-    );
-    const [focusedProgram, setFocusedProgram] = useState(initialFocusedProgram);
+Program.displayName = "Program";
 
-    const unmountedFocusedProgramId = useRef(null);
+const Epg = forwardRef((props, ref) => {
+  const {
+    channels,
+    data,
+    initialFocusedChannel,
+    initialFocusedProgram
+  } = props;
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const offsetTime = useRef(Date.now());
+  const containerRef = useRef();
+  const programRefs = useRef({});
+  const [focusedChannelIndex, setFocusedChannelIndex] = useState(() =>
+    data.findIndex((c) => initialFocusedChannel?.number === c.number)
+  );
+  const [focusedProgram, setFocusedProgram] = useState(initialFocusedProgram);
 
-    useImperativeHandle(ref, () => ({
-      scrollToTime,
-      scrollToTimeAndFocus,
-      focusProgram: (program, channel) => {
-        setFocusedChannelIndex(channels.indexOf(channel));
-        setFocusedProgram(program);
-      }
-    }));
+  const unmountedFocusedProgramId = useRef(null);
 
-    const scrollToTime = useCallback((time, behavior = "smooth") => {
-      offsetTime.current = time - 1;
+  useImperativeHandle(ref, () => ({
+    scrollToTime,
+    scrollToTimeAndFocus,
+    focusProgram: (program, channel) => {
+      setFocusedChannelIndex(channels.indexOf(channel));
+      setFocusedProgram(program);
+    }
+  }));
 
-      let left = getWidthByTime(time - epgEdges.start) + channelwidth / 2;
-      left -= LIST_WIDTH / 2;
+  const scrollToTime = useCallback((time, behavior = "smooth") => {
+    offsetTime.current = time - 1;
 
-      containerRef.current.scrollTo({
-        left,
-        behavior
-      });
-    }, []);
+    let left = getWidthByTime(time - epgEdges.start) + channelwidth / 2;
+    left -= LIST_WIDTH / 2;
 
-    const scrollToTimeAndFocus = useCallback(
-      (time) => {
-        scrollToTime(time);
-        const channel = data[focusedChannelIndex];
-        const program = channel.programs.find((p) =>
-          isInTimerange(time, p.start, p.end)
-        );
-        setFocusedProgram(program);
-      },
-      [data, focusedChannelIndex, scrollToTime]
-    );
+    containerRef.current.scrollTo({
+      left,
+      behavior
+    });
+  }, []);
 
-    const scrollToProgram = useCallback(
-      (program, isSmoothScroll) => {
-        const time = program.start + (program.end - program.start) / 2;
-
-        scrollToTime(time, isSmoothScroll ? "smooth" : "auto");
-      },
-      [scrollToTime]
-    );
-
-    useEffect(() => {
-      if (!initialFocusedProgram) return;
-      scrollToProgram(initialFocusedProgram, false);
-    }, [initialFocusedProgram, scrollToProgram]);
-
-    useEffect(() => {
-      if (!focusedProgram) return;
-      if (!programRefs.current[focusedProgram.id]) {
-        unmountedFocusedProgramId.current = focusedProgram.id;
-        return;
-      }
-      programRefs.current[focusedProgram.id].focus();
-    }, [focusedProgram]);
-
-    const isProgramVisible = ({ program, channelIndex }) => {
-      if (offsetY > channelIndex * channelHeight + 4 * channelHeight) {
-        return false;
-      }
-      if (offsetY < channelIndex * channelHeight - 4 * channelHeight) {
-        return false;
-      }
-      const programLeft =
-        getWidthByTime(program.start - epgEdges.start) + channelwidth;
-      const programWidth = getWidthByTime(program.end - program.start);
-      const programRight = programLeft + programWidth;
-
-      if (
-        programLeft > offsetX - programWidth &&
-        programRight - programWidth < offsetX + LIST_WIDTH
-      )
-        return true;
-
-      return false;
-    };
-
-    const isTimeVisible = (time) => {
-      const left = getWidthByTime(time - epgEdges.start) + channelwidth;
-      const width = hour;
-      const right = left + width;
-
-      if (left > offsetX - width && right - width < offsetX + LIST_WIDTH)
-        return true;
-
-      return false;
-    };
-
-    const handleProgramRef = useCallback((ref) => {
-      if (!ref) return;
-      programRefs.current[ref.id] = ref;
-
-      if (unmountedFocusedProgramId.current === ref.id) {
-        ref.focus();
-        unmountedFocusedProgramId.current = null;
-      }
-    }, []);
-
-    const handleProgramUnmount = useCallback((programId) => {
-      programRefs.current[programId] = null;
-    }, []);
-
-    useEffect(() => {
-      containerRef.current.addEventListener(
-        "scroll",
-        throttle((e) => {
-          setOffsetX(e.target.scrollLeft);
-          setOffsetY(e.target.scrollTop);
-        }, 100)
+  const scrollToTimeAndFocus = useCallback(
+    (time) => {
+      scrollToTime(time);
+      const channel = data[focusedChannelIndex];
+      const program = channel.programs.find((p) =>
+        isInTimerange(time, p.start, p.end)
       );
-    }, []);
+      setFocusedProgram(program);
+    },
+    [data, focusedChannelIndex, scrollToTime]
+  );
 
-    const handleKeyUp = useCallback(
-      (e) => {
-        if (
-          e.which === keycode.codes["left"] ||
-          e.which === keycode.codes["right"]
-        ) {
-          e.preventDefault();
-          const channel = data[focusedChannelIndex];
-          const index = channel.programs.indexOf(focusedProgram);
-          const next =
-            e.which === keycode.codes["left"] ? index - 1 : index + 1;
-          const nextProgram = channel.programs[next];
-          setFocusedProgram(nextProgram);
-          scrollToTime(
-            nextProgram.start + (nextProgram.end - nextProgram.start) / 2
-          );
-          return;
-        }
+  const scrollToProgram = useCallback(
+    (program, isSmoothScroll) => {
+      const time = program.start + (program.end - program.start) / 2;
 
-        if (
-          e.which !== keycode.codes["up"] &&
-          e.which !== keycode.codes["down"]
-        )
-          return;
+      scrollToTime(time, isSmoothScroll ? "smooth" : "auto");
+    },
+    [scrollToTime]
+  );
 
-        e.preventDefault();
+  useEffect(() => {
+    if (!initialFocusedProgram) return;
+    scrollToProgram(initialFocusedProgram, false);
+  }, [initialFocusedProgram, scrollToProgram]);
 
-        setFocusedChannelIndex((prev) => {
-          const next = e.which === keycode.codes["down"] ? prev + 1 : prev - 1;
+  useEffect(() => {
+    if (!focusedProgram) return;
+    if (!programRefs.current[focusedProgram.id]) {
+      unmountedFocusedProgramId.current = focusedProgram.id;
+      return;
+    }
+    // programRefs.current[focusedProgram.id].focus();
+  }, [focusedProgram]);
 
-          const nextProgram = data[next].programs.find(
-            (program) =>
-              offsetTime.current >= program.start &&
-              offsetTime.current < program.end
-          );
+  const isProgramVisible = ({ program, channelIndex }) => {
+    if (offsetY > channelIndex * channelHeight + 4 * channelHeight) {
+      return false;
+    }
+    if (offsetY < channelIndex * channelHeight - 4 * channelHeight) {
+      return false;
+    }
+    const programLeft =
+      getWidthByTime(program.start - epgEdges.start) + channelwidth;
+    const programWidth = getWidthByTime(program.end - program.start);
+    const programRight = programLeft + programWidth;
 
-          setFocusedProgram(nextProgram);
+    if (
+      programLeft > offsetX - programWidth &&
+      programRight - programWidth < offsetX + LIST_WIDTH
+    )
+      return true;
 
-          return next;
-        });
-      },
-      [data, focusedProgram, focusedChannelIndex, scrollToTime]
+    return false;
+  };
+
+  const isTimeVisible = (time) => {
+    const left = getWidthByTime(time - epgEdges.start) + channelwidth;
+    const width = hour;
+    const right = left + width;
+
+    if (left > offsetX - width && right - width < offsetX + LIST_WIDTH)
+      return true;
+
+    return false;
+  };
+
+  const handleProgramRef = useCallback((ref) => {
+    if (!ref) return;
+    programRefs.current[ref.id] = ref;
+
+    if (unmountedFocusedProgramId.current === ref.id) {
+      // ref.focus();
+      unmountedFocusedProgramId.current = null;
+    }
+  }, []);
+
+  const handleProgramUnmount = useCallback((programId) => {
+    programRefs.current[programId] = null;
+  }, []);
+
+  useEffect(() => {
+    containerRef.current.addEventListener(
+      "scroll",
+      throttle((e) => {
+        setOffsetX(e.target.scrollLeft);
+        setOffsetY(e.target.scrollTop);
+      }, 100)
     );
+  }, []);
 
-    useEffect(() => {
-      containerRef.current.scrollTo({
-        top: focusedChannelIndex * channelHeight,
-        behavior: "smooth"
-      });
-    }, [focusedChannelIndex]);
-
-    const handleKeyDown = useCallback((e) => {
+  const handleKeyUp = useCallback(
+    (e) => {
       if (
-        e.which === keycode.codes["up"] ||
-        e.which === keycode.codes["down"] ||
         e.which === keycode.codes["left"] ||
         e.which === keycode.codes["right"]
       ) {
         e.preventDefault();
-      }
-    }, []);
-
-    useEffect(() => {
-      window.addEventListener("keyup", handleKeyUp);
-      window.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        window.removeEventListener("keyup", handleKeyUp);
-        window.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [handleKeyUp, handleKeyDown]);
-
-    const [times, setTimes] = useState(() => {
-      let time = epgEdges.start;
-      const result = [time];
-
-      while (time < epgEdges.end) {
-        time += hour;
-        result.push(time);
+        const channel = data[focusedChannelIndex];
+        const index = channel.programs.indexOf(focusedProgram);
+        const next = e.which === keycode.codes["left"] ? index - 1 : index + 1;
+        const nextProgram = channel.programs[next];
+        setFocusedProgram(nextProgram);
+        scrollToTime(
+          nextProgram.start + (nextProgram.end - nextProgram.start) / 2
+        );
+        return;
       }
 
-      return result;
+      if (e.which !== keycode.codes["up"] && e.which !== keycode.codes["down"])
+        return;
+
+      e.preventDefault();
+
+      setFocusedChannelIndex((prev) => {
+        const next = e.which === keycode.codes["down"] ? prev + 1 : prev - 1;
+
+        const nextProgram = data[next].programs.find(
+          (program) =>
+            offsetTime.current >= program.start &&
+            offsetTime.current < program.end
+        );
+
+        setFocusedProgram(nextProgram);
+
+        return next;
+      });
+    },
+    [data, focusedProgram, focusedChannelIndex, scrollToTime]
+  );
+
+  useEffect(() => {
+    containerRef.current.scrollTo({
+      top: focusedChannelIndex * channelHeight,
+      behavior: "smooth"
     });
+  }, [focusedChannelIndex]);
 
-    return (
-      <div className="epg" style={{ width: LIST_WIDTH }}>
-        <div className="details">
-          {focusedProgram && (
-            <>
-              <img src={focusedProgram?.image} className="details-image" />
-              <div>
-                <div style={{ marginBottom: 4 }}>{focusedProgram?.title}</div>
-                <div style={{ marginBottom: 8, fontSize: 14 }}>
-                  {!isSameDay(new Date(), focusedProgram.start) && (
-                    <>{format(focusedProgram.end, "EEEE, dd/MM")} at </>
-                  )}
-                  {format(focusedProgram.start, "HH:mm")} -
-                  {format(focusedProgram.end, "HH:mm")}
-                </div>
-                <div style={{ fontSize: 14, opacity: 0.7 }}>
-                  {focusedProgram?.description}
-                </div>
+  const handleKeyDown = useCallback((e) => {
+    if (
+      e.which === keycode.codes["up"] ||
+      e.which === keycode.codes["down"] ||
+      e.which === keycode.codes["left"] ||
+      e.which === keycode.codes["right"]
+    ) {
+      e.preventDefault();
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyUp, handleKeyDown]);
+
+  const [times, setTimes] = useState(() => {
+    let time = epgEdges.start;
+    const result = [time];
+
+    while (time < epgEdges.end) {
+      time += hour;
+      result.push(time);
+    }
+
+    return result;
+  });
+
+  return (
+    <div className="epg" style={{ width: LIST_WIDTH }}>
+      <div className="details">
+        {focusedProgram && (
+          <>
+            <img src={focusedProgram?.image} className="details-image" />
+            <div>
+              <div style={{ marginBottom: 4 }}>{focusedProgram?.title}</div>
+              <div style={{ marginBottom: 8, fontSize: 14 }}>
+                {!isSameDay(new Date(), focusedProgram.start) && (
+                  <>{format(focusedProgram.end, "EEEE, dd/MM")} at </>
+                )}
+                {format(focusedProgram.start, "HH:mm")} -
+                {format(focusedProgram.end, "HH:mm")}
               </div>
-            </>
-          )}
-        </div>
+              <div style={{ fontSize: 14, opacity: 0.7 }}>
+                {focusedProgram?.description}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      <div
+        ref={containerRef}
+        style={{
+          height: channelHeight * 4 + 36,
+          overflow: "auto",
+          position: "relative"
+        }}
+      >
         <div
-          ref={containerRef}
           style={{
-            height: channelHeight * 4 + 36,
-            overflow: "auto",
-            position: "relative"
+            position: "relative",
+            width: getWidthByTime(epgEdges.end - epgEdges.start),
+            height: channels.length * channelHeight
           }}
         >
           <div
             style={{
-              position: "relative",
-              width: getWidthByTime(epgEdges.end - epgEdges.start),
-              height: channels.length * channelHeight
+              backgroundColor: "rgba(0,0,0,0.1)",
+              position: "absolute",
+              top: 0,
+              left: getWidthByTime(Date.now() - epgEdges.start) + channelwidth,
+              bottom: 0,
+              width: 4,
+              zIndex: 10
             }}
-          >
-            <div
-              style={{
-                backgroundColor: "rgba(0,0,0,0.1)",
-                position: "absolute",
-                top: 0,
-                left:
-                  getWidthByTime(Date.now() - epgEdges.start) + channelwidth,
-                bottom: 0,
-                width: 4,
-                zIndex: 10
-              }}
-            />
-            <div className="times">
-              {times.filter(isTimeVisible).map((time) => (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: getWidthByTime(time - epgEdges.start) + channelwidth,
-                    zIndex: 10,
-                    display: "flex",
-                    alignItems: "center"
-                  }}
-                >
-                  {format(time, "HH:mm")}
-                </div>
-              ))}
-            </div>
-            <div className="channels">
-              {data.map((channel, channelIndex) => (
-                <div
-                  style={{
-                    height: channelHeight,
-                    padding: 4,
-                    display: "flex"
-                  }}
-                >
-                  <img src={channel.logo} width={60} height={60} />
-                </div>
-              ))}
-            </div>
-            {data.map((channel, channelIndex) =>
-              channel.programs
-                .filter((program) =>
-                  isProgramVisible({ program, channelIndex })
-                )
-                .map((program) => (
-                  <Program
-                    key={program.id}
-                    ref={handleProgramRef}
-                    onUnmount={handleProgramUnmount}
-                    data={program}
-                    channelIndex={channelIndex}
-                    isFocused={focusedProgram?.id === program.id}
-                  />
-                ))
-            )}
+          />
+          <div className="times">
+            {times.filter(isTimeVisible).map((time) => (
+              <div
+                key={time}
+                style={{
+                  position: "absolute",
+                  left: getWidthByTime(time - epgEdges.start) + channelwidth,
+                  zIndex: 10,
+                  display: "flex",
+                  alignItems: "center"
+                }}
+              >
+                {format(time, "HH:mm")}
+              </div>
+            ))}
           </div>
+          <div className="channels">
+            {channels.map((channel, channelIndex) => (
+              <div
+                key={channel.number}
+                style={{
+                  height: channelHeight,
+                  padding: 4,
+                  display: "flex"
+                }}
+              >
+                <img src={channel.logo} width={60} height={60} />
+              </div>
+            ))}
+          </div>
+          {data.map((channel, channelIndex) =>
+            channel.programs
+              .filter((program) => isProgramVisible({ program, channelIndex }))
+              .map((program) => (
+                <Program
+                  key={program.id}
+                  ref={handleProgramRef}
+                  onUnmount={handleProgramUnmount}
+                  data={program}
+                  channelIndex={channelIndex}
+                  isFocused={focusedProgram?.id === program.id}
+                />
+              ))
+          )}
         </div>
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
+
+Epg.displayName = "Epg";
 
 export default function App() {
   const epgRef = useRef();
@@ -471,6 +475,7 @@ export default function App() {
 
       <Epg
         ref={epgRef}
+        channels={channels}
         data={channels}
         initialFocusedChannel={channels[0]}
         initialFocusedProgram={channels[0].programs[10]}
