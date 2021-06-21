@@ -226,10 +226,7 @@ const useEpg = ({ data, initialFocusedChannel, initialFocusedProgram }) => {
     visiblePrograms,
     focusedProgram,
     offsetX,
-    scrollToTime,
     scrollToTimeAndFocus,
-    setFocusedChannelIndex,
-    setFocusedProgram,
     handleProgramRef,
     handleProgramUnmount,
     containerRef

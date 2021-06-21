@@ -19,10 +19,7 @@ const Epg = forwardRef((props, ref) => {
     visiblePrograms,
     focusedProgram,
     offsetX,
-    scrollToTime,
     scrollToTimeAndFocus,
-    setFocusedChannelIndex,
-    setFocusedProgram,
     handleProgramRef,
     handleProgramUnmount,
     containerRef
@@ -38,12 +35,7 @@ const Epg = forwardRef((props, ref) => {
   }, [focusedProgram, onFocusedProgramChange]);
 
   useImperativeHandle(ref, () => ({
-    scrollToTime,
-    scrollToTimeAndFocus,
-    focusProgram: (program, channel) => {
-      setFocusedChannelIndex(channels.indexOf(channel));
-      setFocusedProgram(program);
-    }
+    scrollToTimeAndFocus
   }));
 
   return (
