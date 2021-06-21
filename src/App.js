@@ -237,7 +237,14 @@ const Epg = forwardRef((props, ref) => {
     );
   }, []);
 
-  const handleKeyUp = useCallback(
+  useEffect(() => {
+    containerRef.current.scrollTo({
+      top: focusedChannelIndex * channelHeight,
+      behavior: "smooth"
+    });
+  }, [focusedChannelIndex]);
+
+  const handleKeyDown = useCallback(
     (e) => {
       if (
         e.which === keycode.codes["left"] ||
@@ -287,14 +294,7 @@ const Epg = forwardRef((props, ref) => {
     [data, focusedProgram, focusedChannelIndex, scrollToTime]
   );
 
-  useEffect(() => {
-    containerRef.current.scrollTo({
-      top: focusedChannelIndex * channelHeight,
-      behavior: "smooth"
-    });
-  }, [focusedChannelIndex]);
-
-  const handleKeyDown = useCallback((e) => {
+  const handleKeyUp = useCallback((e) => {
     if (
       e.which === keycode.codes["up"] ||
       e.which === keycode.codes["down"] ||
