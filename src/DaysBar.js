@@ -1,19 +1,21 @@
 import { addDays, format, getHours, setHours } from "date-fns";
 import { useCallback, useState } from "react";
 
+const primeTimeHour = 18;
+
 const DaysBar = ({ onSelect }) => {
   const [times] = useState(() => {
     const result = [];
     for (let index = -10; index < 10; index++) {
-      if (index === 0) result.push(["Now", new Date()]);
-      else result.push(addDays(new Date(), index));
+      if (index === 0) result.push([new Date(), "Now"]);
+      else result.push([addDays(new Date(), index)]);
     }
 
-    if (getHours(new Date()) + 3 < 20) {
-      result.push(["This evening", setHours(new Date(), 18)]);
+    if (getHours(new Date()) + 3 < primeTimeHour + 2) {
+      result.push([setHours(new Date(), primeTimeHour), "This evening"]);
     }
 
-    return result;
+    return result.sort((a, b) => a[0] - b[0]);
   });
 
   const handleRef = useCallback((ref) => {
@@ -32,8 +34,8 @@ const DaysBar = ({ onSelect }) => {
   return (
     <div ref={handleRef} className="days-bar">
       {times.map((item) => {
-        const date = Array.isArray(item) ? item[1] : item;
-        const label = Array.isArray(item) ? item[0] : format(date, "dd/MM");
+        const date = item[0];
+        const label = item.length === 2 ? item[1] : format(date, "dd/MM");
         return (
           <button
             key={item}
