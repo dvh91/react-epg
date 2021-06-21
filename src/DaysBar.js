@@ -1,7 +1,7 @@
 import { addDays, format, getHours, setHours } from "date-fns";
 import { useCallback, useState } from "react";
 
-const primeTimeHour = 18;
+const primeTimeHour = 20;
 
 const DaysBar = ({ onSelect }) => {
   const [times] = useState(() => {
