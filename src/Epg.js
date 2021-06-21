@@ -27,12 +27,9 @@ const Epg = forwardRef((props, ref) => {
     channels,
     data,
     initialFocusedChannel,
-    initialFocusedProgram
+    initialFocusedProgram,
+    onFocusedProgramChange
   });
-
-  useEffect(() => {
-    onFocusedProgramChange(focusedProgram);
-  }, [focusedProgram, onFocusedProgramChange]);
 
   useImperativeHandle(ref, () => ({
     scrollToTimeAndFocus

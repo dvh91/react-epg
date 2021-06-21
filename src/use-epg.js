@@ -11,7 +11,12 @@ import {
   isInTimerange
 } from "./utils";
 
-const useEpg = ({ data, initialFocusedChannel, initialFocusedProgram }) => {
+const useEpg = ({
+  data,
+  initialFocusedChannel,
+  initialFocusedProgram,
+  onFocusedProgramChange
+}) => {
   const offsetTime = useRef(Date.now());
   const containerRef = useRef();
   const unmountedFocusedProgramId = useRef(null);
@@ -221,6 +226,10 @@ const useEpg = ({ data, initialFocusedChannel, initialFocusedProgram }) => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyUp, handleKeyDown]);
+
+  useEffect(() => {
+    onFocusedProgramChange(focusedProgram);
+  }, [focusedProgram, onFocusedProgramChange]);
 
   return {
     visiblePrograms,
