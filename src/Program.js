@@ -19,7 +19,7 @@ import {
 const Program = memo(
   forwardRef(({ data, isFocused, channelIndex, onUnmount }, ref) => {
     const rootRef = useRef(null);
-    const [isFuture, setIsFuture] = useState(() => {
+    const [isFuture] = useState(() => {
       const isLive = Date.now() >= data.start && Date.now() < data.end;
       return !isLive && Date.now() < data.end;
     });
@@ -43,7 +43,6 @@ const Program = memo(
       const height = channelHeight;
 
       return {
-        position: "absolute",
         top: getChannelTopOffset(channelIndex),
         left,
         width,

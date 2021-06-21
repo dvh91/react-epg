@@ -1,25 +1,31 @@
 import { addDays, format } from "date-fns";
-import { useState } from "react";
-import { LIST_WIDTH } from "./utils";
+import { useCallback, useState } from "react";
 
 const DaysBar = ({ onSelect }) => {
   const [times] = useState(() => {
-    const array = [];
+    const result = [];
     for (let index = -10; index < 10; index++) {
-      if (index === 0) array.push(["Now", new Date()]);
-      else array.push(addDays(new Date(), index));
+      if (index === 0) result.push(["Now", new Date()]);
+      else result.push(addDays(new Date(), index));
     }
-    return array;
+    return result;
   });
 
+  const handleRef = useCallback((ref) => {
+    if (!ref) return;
+    ref.scrollLeft = ref.offsetWidth / 2;
+  }, []);
+
+  const handleItemClick = useCallback(
+    (date) => {
+      const time = date.getTime();
+      onSelect(time);
+    },
+    [onSelect]
+  );
+
   return (
-    <div
-      ref={(ref) => {
-        if (!ref) return;
-        ref.scrollLeft = ref.offsetWidth / 2;
-      }}
-      className="days-bar"
-    >
+    <div ref={handleRef} className="days-bar">
       {times.map((item) => {
         const date = Array.isArray(item) ? item[1] : item;
         const label = Array.isArray(item) ? item[0] : format(date, "dd/MM");
@@ -27,10 +33,7 @@ const DaysBar = ({ onSelect }) => {
           <button
             key={item}
             className="day-button"
-            onClick={() => {
-              const time = date.getTime();
-              onSelect(time);
-            }}
+            onClick={() => handleItemClick(date)}
           >
             {label}
           </button>

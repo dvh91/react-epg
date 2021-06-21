@@ -1,7 +1,7 @@
 import { channels } from "./data";
-import { forwardRef, useEffect, useImperativeHandle } from "react";
-import Program from "./Program";
+import { forwardRef, useImperativeHandle } from "react";
 import { channelHeight, epgEdges, getWidthByTime } from "./utils";
+import Program from "./Program";
 import LiveIndicator from "./LiveIndicator";
 import ChannelList from "./ChannelList";
 import TimesBar from "./TimesBar";
@@ -39,10 +39,9 @@ const Epg = forwardRef((props, ref) => {
     <div className="epg">
       <div
         ref={containerRef}
+        className="epg-container"
         style={{
-          height: channelHeight * 4 + 36,
-          overflow: "auto",
-          position: "relative"
+          height: channelHeight * 4 + 36
         }}
       >
         <div

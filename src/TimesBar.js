@@ -9,7 +9,7 @@ import {
 } from "./utils";
 
 const TimesBar = ({ offsetX }) => {
-  const [times, setTimes] = useState(() => {
+  const [times] = useState(() => {
     let time = epgEdges.start;
     const result = [time];
 
@@ -40,12 +40,9 @@ const TimesBar = ({ offsetX }) => {
       {times.filter(isTimeVisible).map((time) => (
         <div
           key={time}
+          className="times-item"
           style={{
-            position: "absolute",
-            left: getWidthByTime(time - epgEdges.start) + channelwidth,
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center"
+            left: getWidthByTime(time - epgEdges.start) + channelwidth
           }}
         >
           {format(time, "HH:mm")}
