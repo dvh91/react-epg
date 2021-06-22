@@ -1,6 +1,6 @@
 import keycode from "keycode";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { debounce, throttle } from "lodash";
+import { debounce } from "lodash";
 import {
   LIST_WIDTH,
   hour,
@@ -16,6 +16,7 @@ const useEpg = ({
   initialFocusedChannel,
   initialFocusedProgram,
   onFocusedProgramChange,
+  onChannelIndexChange,
   onTimeChange
 }) => {
   const [offsetTime, setOffsetTime] = useState(Date.now());
@@ -136,7 +137,9 @@ const useEpg = ({
           isInTimerange(offsetTime, program.start, program.end)
         );
 
-        setFocusedProgram(nextProgram);
+        if (nextProgram) {
+          setFocusedProgram(nextProgram);
+        }
 
         return next;
       });
@@ -235,6 +238,10 @@ const useEpg = ({
   useEffect(() => {
     onFocusedProgramChange(focusedProgram);
   }, [focusedProgram, onFocusedProgramChange]);
+
+  useEffect(() => {
+    onChannelIndexChange(focusedChannelIndex);
+  }, [focusedChannelIndex, onChannelIndexChange]);
 
   useEffect(() => {
     onTimeChange(offsetTime);

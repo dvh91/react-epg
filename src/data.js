@@ -1,5 +1,3 @@
-import { setMinutes } from "date-fns";
-
 const availableEvents = [
   {
     title: "Avengers",
@@ -61,9 +59,6 @@ const availableEventLength = [
   1000 * 60 * 270
 ];
 
-export const DAYS_BACK_MILLIS = 10 * 24 * 60 * 60 * 1000; // 10 days
-export const DAYS_FORWARD_MILLIS = 10 * 24 * 60 * 60 * 1000; // 10 days
-
 const getEventEnd = (eventStartMillis) => {
   const length =
     availableEventLength[
@@ -72,15 +67,12 @@ const getEventEnd = (eventStartMillis) => {
   return eventStartMillis + length;
 };
 
-const createEvents = (epgChannel, nowMillis) => {
+const createEvents = (epgChannel, startTime, endTime) => {
   const events = new Array();
 
-  const epgStart = nowMillis - DAYS_BACK_MILLIS;
-  const epgEnd = nowMillis + DAYS_FORWARD_MILLIS;
+  let currentTime = startTime;
 
-  let currentTime = epgStart;
-
-  while (currentTime <= epgEnd) {
+  while (currentTime <= endTime) {
     const eventEnd = getEventEnd(currentTime);
     const event = availableEvents[Math.floor(Math.random() * 6 + 0)];
     const epgEvent = {
@@ -98,10 +90,8 @@ const createEvents = (epgChannel, nowMillis) => {
   return events;
 };
 
-const generateTVGuide = () => {
-  const channels = new Array();
-
-  const nowMillis = setMinutes(new Date(), 0).getTime();
+export const generateTVGuide = ({ start, end }) => {
+  const channels = [];
 
   for (let i = 0; i < 100; i++) {
     const epgChannel = {
@@ -109,11 +99,9 @@ const generateTVGuide = () => {
       logo: availableChannelLogos[i % 5]
     };
 
-    epgChannel.programs = createEvents(epgChannel, nowMillis);
+    epgChannel.programs = createEvents(epgChannel, start, end);
     channels.push(epgChannel);
   }
 
   return channels;
 };
-
-export const channels = generateTVGuide();

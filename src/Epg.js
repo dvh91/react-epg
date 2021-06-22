@@ -1,4 +1,3 @@
-import { channels } from "./data";
 import { forwardRef, useImperativeHandle } from "react";
 import { channelHeight, epgEdges, getWidthByTime } from "./utils";
 import Program from "./Program";
@@ -13,6 +12,7 @@ const Epg = forwardRef((props, ref) => {
     initialFocusedChannel,
     initialFocusedProgram,
     onFocusedProgramChange,
+    onChannelIndexChange,
     onTimeChange
   } = props;
 
@@ -25,11 +25,11 @@ const Epg = forwardRef((props, ref) => {
     handleProgramUnmount,
     containerRef
   } = useEpg({
-    channels,
     data,
     initialFocusedChannel,
     initialFocusedProgram,
     onFocusedProgramChange,
+    onChannelIndexChange,
     onTimeChange
   });
 
@@ -50,12 +50,12 @@ const Epg = forwardRef((props, ref) => {
           style={{
             position: "relative",
             width: getWidthByTime(epgEdges.end - epgEdges.start),
-            height: channels.length * channelHeight
+            height: data.length * channelHeight
           }}
         >
           <LiveIndicator />
           <TimesBar offsetX={offsetX} />
-          <ChannelList channels={channels} />
+          <ChannelList channels={data} />
           {visiblePrograms.map(([program, channelIndex]) => (
             <Program
               key={program.id}
