@@ -212,8 +212,8 @@ const useEpg = ({
           setOffsetX(e.target.scrollLeft);
           setOffsetY(e.target.scrollTop);
         },
-        200,
-        { trailing: true }
+        500,
+        { trailing: true, maxWait: 500 }
       )
     );
   }, []);
