@@ -47,7 +47,6 @@ const DaysBar = ({ value, onSelect }) => {
 
   useEffect(() => {
     const primeTimeItem = times.find((t) => t[2] === "primetime");
-    value && console.log(format(new Date(value), "HH:mm"));
     if (
       primeTimeItem &&
       value >= subHours(primeTimeItem[0], HOURS_IN_SCREEN / 2) &&

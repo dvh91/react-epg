@@ -24,7 +24,7 @@ const TimesBar = ({ offsetX }) => {
   const isTimeVisible = useCallback(
     (time) => {
       const left = getWidthByTime(time - epgEdges.start) + channelwidth;
-      const width = hour;
+      const width = getWidthByTime(hour);
       const right = left + width;
 
       if (left > offsetX - width && right - width < offsetX + LIST_WIDTH)
