@@ -1,6 +1,6 @@
 import keycode from "keycode";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { throttle } from "lodash";
+import { debounce, throttle } from "lodash";
 import {
   LIST_WIDTH,
   hour,
@@ -204,10 +204,14 @@ const useEpg = ({
   useEffect(() => {
     containerRef.current.addEventListener(
       "scroll",
-      throttle((e) => {
-        setOffsetX(e.target.scrollLeft);
-        setOffsetY(e.target.scrollTop);
-      }, 100)
+      debounce(
+        (e) => {
+          setOffsetX(e.target.scrollLeft);
+          setOffsetY(e.target.scrollTop);
+        },
+        200,
+        { trailing: true }
+      )
     );
   }, []);
 
